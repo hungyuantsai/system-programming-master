@@ -1,0 +1,8 @@
+{
+    "makefile.extensionOutputFolder": "./.vscode",
+    "files.associations": {
+        "*.html.erb": "erb",
+        "stdio.h": "c"
+    },
+    "git.ignoreLimitWarning": true
+}
