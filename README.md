@@ -7,6 +7,7 @@
 使用的編輯軟體是：CLion，這軟體可從底下這個網址下載
 https://www.jetbrains.com/clion/download/#section=mac
 免費試用一個月
+
 老師或者學生可以從底下這個網站註冊免費版本
 https://www.jetbrains.com/buy/classroom/?fromMenu
 
@@ -24,7 +25,7 @@ https://groups.google.com/d/forum/ccu_system_programming
 https://www.cs.ccu.edu.tw/~shiwulo/course/2019-sp/ecourse/01.Linux_install_and_setup/
 
 ### ch02，編譯環境介紹
-### ch03，追蹤執行擋與作業系統的互動
+### ch03，追蹤執行檔與作業系統的互動
 ### ch04，檔案輸入與輸出
 ### ch05，Ｃ標準輸出入函數庫
 ### ch06，檔案及目錄
