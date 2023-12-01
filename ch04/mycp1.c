@@ -10,13 +10,13 @@
 
 int main(int argc, char* argv[]) {
 
-    // 從inputFd將檔案寫到outputFd
+    // 從 inputFd 將檔案寫到 outputFd
     int inputFd, outputFd;
     
     // 讀進多少，寫出多少
     ssize_t numIn, numOut;
     
-    // 把檔案內容讀到buffer，再寫出去
+    // 把檔案內容讀到 buffer，再寫出去
     char buffer[BUF_SIZE];
 
     // 確定使用者輸入二個參數
@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
         exit(0);
     }
 
-    //打開來源檔案
+    // 打開來源檔案
     inputFd = open(argv [1], O_RDONLY);
     if (inputFd == -1) {
         char* filename=basename(argv[1]);
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     // 比較常忘記的是歸零，是否歸零是情況而定
     // 如果沒有歸零就會有新舊混淆的問題
     // 資料庫系統（DBMS）打開打檔案通常不會歸零，因為他們會在既有的上面做更新
-    // word打開檔案通常要歸零，因為使用者的新文章可能更短，這會造成新舊混淆問題
+    // word 打開檔案通常要歸零，因為使用者的新文章可能更短，這會造成新舊混淆問題
     outputFd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR| S_IWUSR);
     if(outputFd == -1){
         char* filename=basename(argv[3]);
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
         exit(1); 
     }
     
-    // 在while敘述中，將檔案的資料讀入，共毒入numIn個字元
+    // 在 while 敘述中，將檔案的資料讀入，共讀入 numIn 個字元
     while((numIn = read(inputFd, buffer, BUF_SIZE)) > 0) {
         // 將資料寫出到目的檔案
         numOut = write(outputFd, buffer, (ssize_t) numIn);

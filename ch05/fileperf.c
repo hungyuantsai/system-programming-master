@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     FILE *input = fopen(argv[1], "r");
     FILE *output = fopen(argv[2], "w");
 
@@ -41,7 +40,7 @@ int main(int argc, char **argv)
     // 假設一個字的最大長度是80個字母
     char word_buf[82];
     
-    // word_buf已經用了多少個字母
+    // word_buf 已經用了多少個字母
     int buflen = 0;
     
     // 在螢幕上已經列印到第幾個字母

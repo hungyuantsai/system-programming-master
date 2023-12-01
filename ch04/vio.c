@@ -9,8 +9,7 @@
 #define NUMBUFS 3
 
 int
-main(int argc, char *argv[])
-{
+main(int argc, char *argv[]) {
 	const char *buf1 = "Hello ";
 	const char *buf2 = "Wikipedia ";
 	const char *buf3 = "Community!\n";

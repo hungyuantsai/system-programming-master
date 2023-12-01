@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
     // 讀進多少，寫出多少
     ssize_t numIn, numOut;
     
-    // 把檔案內容讀到buffer，再寫出去
+    // 把檔案內容讀到 buffer，再寫出去
     char buffer[BUF_SIZE];
 
     // 確定使用者輸入二個參數
@@ -59,10 +59,10 @@ int main(int argc, char* argv[]) {
     off_t data_off=0, hole_off=0, cur_off=0;
     long long fileSize, blockSize, pos=0;
     
-    // 拿到檔案大小的方法，用lseek移到檔案尾巴，看回傳值
+    // 拿到檔案大小的方法，用 lseek 移到檔案尾巴，看回傳值
     fileSize = lseek(inputFd, 0, SEEK_END);
     
-    // 讀到大小後記得用lseek回到原位（0）
+    // 讀到大小後記得用 lseek 回到原位（0）
     lseek(inputFd, 0, SEEK_SET);
 
 	while (1) {
@@ -83,12 +83,12 @@ int main(int argc, char* argv[]) {
             continue;
         }
         // 底下這一段可以用 mmap + memcpy 取代
-        // 至此，data_off一定在前面，hole_off一定在後面
+        // 至此，data_off 一定在前面，hole_off 一定在後面
 		blockSize=hole_off-data_off;
 		lseek(inputFd, data_off, SEEK_SET);
 		lseek(outputFd, data_off, SEEK_SET);
 
-        // 這個while loop與 mycp 相同
+        // 這個 while loop與 mycp 相同
 		while((numIn = read(inputFd, buffer, BUF_SIZE)) > 0) {
 			numOut = write(outputFd, buffer, (ssize_t) numIn);
 			if (numIn != numOut) perror("numIn != numOut");

@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <wchar.h>
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	wchar_t *wstr = L"中文"; 
 	printf("%d\n",fwide(stdout, 0));
 	wprintf(L"%lc\n",wstr);

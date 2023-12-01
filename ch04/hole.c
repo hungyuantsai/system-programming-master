@@ -16,11 +16,11 @@ int main() {
 	if (fd <0)
 		perror("無法製造myHole");
 	
-    // lseek將『檔案指標』由開始位置向後移動100G，lseek比較可能出錯，用assert檢查一下
+    // lseek 將『檔案指標』由開始位置向後移動 100G，lseek 比較可能出錯，用 assert 檢查一下
     assert(lseek(fd, 10*M, SEEK_SET) != -1);
 	write(fd, "1", sizeof("1"));
 	
-    // lseek將『檔案指標』由『目前』位置向後移動100G，lseek比較可能出錯，用assert檢查一下
+    // lseek 將『檔案指標』由『目前』位置向後移動 100G，lseek 比較可能出錯，用 assert 檢查一下
 	assert(lseek(fd, 10, SEEK_CUR) != -1);
     write(fd, "2", sizeof("2"));
 	

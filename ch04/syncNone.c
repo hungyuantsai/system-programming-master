@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	fd = open("./synFile.data",O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	for(num=0; num <=100000; num++) {
 		write(fd, "1234", sizeof("1234"));
-		//完全不做同步
+		// 完全不做同步
 		if (num%10000==1) {
 			write(1, "*", sizeof("*"));
 			fsync(1);

@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 	for(num=0; num <=100000; num++) {
 		write(fd, "1234", sizeof("1234"));
 		
-        // 只同步data沒有同步metadata
+        // 只同步 data 沒有同步 metadata
 		fdatasync(fd);
 		
         if (num%10000==1) {

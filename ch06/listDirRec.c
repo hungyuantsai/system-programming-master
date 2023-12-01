@@ -25,8 +25,7 @@ void printName(char* type, char* name) {
     printf("%s\n", name);
 }
 
-void listDir(char* pathName)
-{
+void listDir(char* pathName) {
     level++;
     DIR* curDir = opendir(pathName);
     assert(curDir!=NULL);
