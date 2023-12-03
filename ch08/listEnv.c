@@ -2,6 +2,7 @@
 使用方法：
 不用給任何參數
 */
+
 #include <stdlib.h>
 #include <stdio.h>
 extern char **environ;
