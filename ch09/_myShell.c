@@ -1,6 +1,7 @@
-/*執行方法：
-myShell
+/*
+執行方法：myShell
 */
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -8,6 +9,7 @@ myShell
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+
 ///color///
 #define NONE "\033[m"
 #define RED "\033[0;32;31m"
@@ -41,37 +43,44 @@ char* argVect[256];
 parseString：將使用者傳進的命令轉換成字串陣列
 str：使用者傳進的命令
 cmd：回傳執行檔
-更好的作法：使用strtok
+更好的作法：使用 strtok
 */
+
 void parseString(char* str, char** cmd) {
     char* buf;
+
+    /* fgets 拿進來的字串有換行符號，因此扣掉 1 */
     int totalLen = strlen(str)-1;
-    /*fgets拿進來的字串有換行符號，因此扣掉1*/
     int cur=0, flag=0, idx=0;
-    /*cur代表目前正要讀的字串開頭位置*/
-    /*將開頭的空白符號吃光光*/
+
+    /* cur 代表目前正要讀的字串開頭位置 */
+    /* 將開頭的空白符號吃光光 */
     while(str[cur] == ' ')
         cur++;
+    
     while (1) {
+        /* %ms會自動配置記憶體 */
         sscanf(str+cur, "%ms", &buf);
-        /*%ms會自動配置記憶體*/
+
         if (idx==0) *cmd=buf;
-        /*第一個參數就是執行檔*/
+        /* 第一個參數就是執行檔 */
         argVect[idx++]=buf;
         cur += strlen(buf)+1;
-        /*將空白符號吃光光*/
+        
+        /* 將空白符號吃光光 */
         while(str[cur] == ' ')
             cur++;
         if (cur >= totalLen)
             break;
     }
-    /*依照規定，字串陣列的最尾端要填入NULL*/
+    /* 依照規定，字串陣列的最尾端要填入 NULL */
     argVect[idx]=NULL;
 }
 
 /*
-freeArgVect：釋放掉sanf("%ms");所配置的字串
+freeArgVect：釋放掉 scanf("%ms"); 所配置的字串
 */
+
 void freeArgVect() {
     int idx;
     for(idx=0; argVect[idx]!=NULL; idx++)
@@ -89,10 +98,7 @@ int main (int argc, char** argv) {
         char* loginName = getlogin();
         int homeLen = 0;
         gethostname(hostName, 256);
-        /*
-        底下程式碼製造要顯示的路徑字串，
-        會參考"home"將"home"路徑取代為~
-        */
+        /* 底下程式碼製造要顯示的路徑字串，會參 考"home" 將 "home" 路徑取代為~ */
         getcwd(cwd, 256);
         pos=strspn(getenv("HOME"), cwd);
         homeLen = strlen(getenv("HOME"));
@@ -103,15 +109,13 @@ int main (int argc, char** argv) {
         }
         else
             showPath=cwd;
-        /*
-        底下程式碼負責印出提示符號
-        */
+        
+        /* 底下程式碼負責印出提示符號 */
         printf(LIGHT_GREEN"%s@%s:", loginName, hostName);
         printf(BLU_BOLD"%s>> ", showPath);
         printf(NONE);
-        /*
-        接收使用者命令，除了cd, exit以外，其他指令呼叫對應的執行檔
-        */
+
+        /* 接收使用者命令，除了cd, exit以外，其他指令呼叫對應的執行檔 */
         fgets(cmdLine, 4096, stdin);
         if (strlen(cmdLine)>1)
             parseString(cmdLine, &exeName);
@@ -131,18 +135,13 @@ int main (int argc, char** argv) {
         }
         pid = fork();
         if (pid == 0) {
-            /*
-            產生一個child執行使用者的指令
-            */
+            /* 產生一個 child 執行使用者的指令 */
             if (execvp(exeName, argVect)==-1) {
                 perror("myShell");
                 exit(errno*-1);
             }
         } else {
-            /*
-            parent(myShell)等待child完成命令
-            完成命令後，parent將child的結束回傳值印出來
-            */
+            /* parent(myShell) 等待 child 完成命令，完成後，parent 將 child 結束的回傳值印出來 */
             wait(&wstatus);
             printf(RED "return value of " YELLOW "%s" RED " is " YELLOW "%d\n", 
                 exeName, WEXITSTATUS(wstatus));
