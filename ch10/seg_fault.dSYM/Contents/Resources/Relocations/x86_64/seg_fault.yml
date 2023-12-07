@@ -1,0 +1,9 @@
+---
+triple:          'x86_64-apple-darwin'
+binary-path:     seg_fault
+relocations:
+  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _sighandler, symObjAddr: 0x0, symBinAddr: 0x100003E40, symSize: 0x40 }
+  - { offsetInCU: 0x4D, offset: 0x4D, size: 0x8, addend: 0x0, symName: _c, symBinAddr: 0x100008000, symSize: 0x0 }
+  - { offsetInCU: 0x62, offset: 0x62, size: 0x8, addend: 0x0, symName: _sighandler, symObjAddr: 0x0, symBinAddr: 0x100003E40, symSize: 0x40 }
+  - { offsetInCU: 0x86, offset: 0x86, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x40, symBinAddr: 0x100003E80, symSize: 0x96 }
+...

@@ -5,25 +5,14 @@
 #include <unistd.h>
 #include <string.h>
 
-/**
- * @brief sys_siglist 是 libc 內建的，存放所有signal的「邏輯名稱」
- * 
- * @param signumber 
- */
-
 void sighandler(int signumber) {
-    printf("get a signal named '%d', '%s'\n", signumber,
-           strsignal(signumber));
+    printf("get a signal named '%d', '%s'\n", signumber, strsignal(signumber));
 }
 
-/**
- * @brief 假設系統中最多有100個signal，每個號碼都拿去註冊 signalhandler
- * 要特別注意一下，有些跟process control的signal是無法註冊的，例如：SIGKILL
- * 
- * @param argc 
- * @param argv 
- * @return int 
- */
+/*
+假設系統中最多有 100 個 signal，每個號碼都拿去註冊 signalhandler
+要特別注意一下，有些跟 process control 的signal 是無法註冊的，例如：SIGKILL 
+*/
 
 int main(int argc, char **argv) {
     int sig_exist[100];
