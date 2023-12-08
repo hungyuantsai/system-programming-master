@@ -1,8 +1,19 @@
-/*執行方法：
-./myShell
->> ls -R /
-ctr-c
-*/
+
+#include <fcntl.h>  /* Definition of AT_* constants */
+#include <stdio.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -13,8 +24,9 @@ ctr-c
 #include <signal.h>
 #include <time.h>
 #include <setjmp.h>
-#include <sys/resource.h> 
-///color///
+#include <sys/resource.h>
+
+/* color */
 #define NONE "\033[m"
 #define RED "\033[0;32;31m"
 #define LIGHT_RED "\033[1;31m"
@@ -38,15 +50,19 @@ ctr-c
 #define CYAN_BOLD_ITALIC "\x1b[;36;1;3m"
 #define RESET "\x1b[0;m"
 
-/*
-全域變數，放解析過後的使用者指令（字串陣列）
-*/
+/* 全域變數，放解析過後的使用者指令（字串陣列）*/
 char* argVect[256];
 
-//下列三個變數作為main和signal handler溝通用
+/* jumpbuffer，setjmp 和 longjmp 使用。類似於書籤，只能跳到「caller」*/
 sigjmp_buf jumpBuf;
+
+/* shell 是否產生 child process，決定 ctrl c 要送給誰 */
 volatile sig_atomic_t hasChild = 0;
+
+/* child的process id */ 
 pid_t childPid;
+
+/* 每秒鐘有多少個nanoseconds */
 const long long nspersec = 1000000000;
 
 long long timespec2sec(struct timespec ts) {
@@ -56,6 +72,7 @@ long long timespec2sec(struct timespec ts) {
     //return (double)ns/1000000000.0;
 }
 
+/* 將 timeval 資料結構轉換成多少個 nanoseconds */
 double timeval2sec(struct timeval input) {
     long long us = input.tv_sec*1000000;
     us += input.tv_usec;
@@ -63,79 +80,101 @@ double timeval2sec(struct timeval input) {
     return (double)us/1000000.0;
 }
 
-/*signal handler專門用來處理ctr-c*/
-void ctrC_handler(int sigNumber) {
+/* signal handler 專門用來處理 ctrl c */
+void ctrlC_handler(int sigNumber) {
+    /* 如果 shell 有 child，結束掉 child。例如：正在執行 ls */
     if (hasChild) {
         kill(childPid, sigNumber);
         hasChild = 0;
-    } else {
-        /*確認main function並不是剛好在處理字串，這裡使用一個隱含的同步方法*/
-        /*藉由確認是否argVect[0]（即執行檔）是否為NULL保證main function不是在處理字串*/
-        /*主程式的控制迴圈必須在一開始的地方將argVect[0]設為NULL*/
+    }
+    /* 否則先將「^c」放到 input stream，然後讓主迴圈決定怎樣處理「^c」*/
+    else {
+        printf("\n");
+        /* 確認 main function 並不是剛好在處理字串，這裡使用一個隱含的同步方法 */
+        /* 藉由確認是否 argVect[0]（即執行檔）是否為 NULL 保證 main function 不是在處理字串 */
+        /* 主程式的控制迴圈必須在一開始的地方將 argVect[0] 設為 NULL */
         if (argVect[0] == NULL) {
-            ungetc('\n', stdin);ungetc('c', stdin);ungetc('^', stdin);
-            siglongjmp(jumpBuf, 1);
+            ungetc('\n', stdin);
+            ungetc('c', stdin);
+            ungetc('^', stdin);
+            longjmp(jumpBuf, 1);
         } else {
-            /*極少發生，剛好在處理字串，忽略這個signal，印出訊息提示一下*/
-            fprintf(stderr, "info, 處理字串時使用者按下ctr-c\n");
+            /* 極少發生，剛好在處理字串，忽略這個 signal，印出訊息提示一下 */
+            fprintf(stderr, "info, 處理字串時使用者按下 ctrl c\n");
         }
     }
 }
 
-/*
-parseString：將使用者傳進的命令轉換成字串陣列
-str：使用者傳進的命令
-cmd：回傳執行檔
-*/
-void parseString(char* str, char** cmd) {
-    int idx=0;
-    char* retPtr;
-    //printf("%s\n", str);
-    retPtr=strtok(str, " \n");
-    while(retPtr != NULL) {
-        //printf("token =%s\n", retPtr);
-        //if(strlen(retPtr)==0) continue;
-        argVect[idx++] = retPtr;
-        if (idx==1)
-            *cmd = retPtr;
-        retPtr=strtok(NULL, " \n");
+/* dir 可以列出當前目錄裡的所有檔案，功能類似於 ls */
+int dir() {
+    DIR *dir;
+    struct dirent *ent;
+    char *curDir = "./";
+    char pathname[512];
+    struct stat buf;
+    int perm;
+    char *time;
+    
+    dir = opendir("./");
+    ent = readdir(dir);
+    while (ent != NULL) {
+        strcpy(pathname, curDir);
+        strcat(pathname, ent->d_name);
+        stat(pathname, &buf);
+        perm = (buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
+        time = ctime(&buf.st_atime);
+        time[strlen(time) - 1] = 0;
+        printf("%o  %d  %d %8d %s %s\n", perm, buf.st_uid, buf.st_gid, (int)buf.st_size, time, ent->d_name);
+        ent = readdir(dir);
     }
-    argVect[idx]=NULL;
+    closedir(dir);
+    return 0;
 }
 
-/*
-請參考myshell2.c的註解
-*/
+void parseString(char* str, char** cmd) {
+    int idx = 0;
+    char* token;
+
+    token = strtok(str, " \n");
+    while(token != NULL) {
+        argVect[idx++] = token;
+        if (idx == 1) {
+            *cmd = token;
+        }
+        //printf("para = %s\n", token);
+        token = strtok(NULL, " \n");
+    }
+    argVect[idx] = NULL; // string ending
+}
 
 int main (int argc, char** argv) {
     char cmdLine[4096];
     char hostName[256];
     char cwd[256];
-    char* exeName;
+    char *exeName;
     int pid, pos, wstatus;
-    struct rusage resUsage;     //資源使用率
-    struct timespec statTime, endTime;
-    /*底下程式碼註冊signal的處理方式*/
-    signal(SIGINT, ctrC_handler);
+    
+    struct rusage resUsage; // 資源使用率，shell 可使用 wait3() 得到 child 的資源使用率
+    struct timespec statTime, endTime; // 外部程式的開始執行時間、結束時間
+    
+    /* 註冊 signal 的處理方式 */
+    signal(SIGINT, ctrlC_handler);
     signal(SIGQUIT, SIG_IGN);
     signal(SIGTSTP, SIG_IGN);
-
-    /*無窮迴圈直到使用者輸入exit*/
+    
+    /* main loop */
     while(1) {
-        char* showPath;
-        char* loginName;
+
         int homeLen = 0;
-        //設定化hasChild, argVect[0]，避免發生race condtion
+        char *showPath, *loginName = getlogin(); // 抓主機名稱、用戶名稱
+        gethostname(hostName, 256);
+        
         hasChild = 0;
         argVect[0]=NULL;
-        //抓取主機名稱、用戶名稱
-        loginName = getlogin();
-        gethostname(hostName, 256);
-        /*
-        底下程式碼製造要顯示的路徑字串，
-        會參考"home"將"home"路徑取代為~
-        */
+
+        /* 製造要顯示的路徑字串，會參考 "home" 將 "home" 路徑取代為 ~ */
         getcwd(cwd, 256);
+        /* 目的是：把/home/shiwulo/Desktop 轉換成 ~/Desktop */
         pos=strspn(getenv("HOME"), cwd);
         homeLen = strlen(getenv("HOME"));
         //printf("cwd=%s, home=%s, pos=%d, prompt=%s", cwd, getenv("HOME"), pos, &cwd[pos]);
@@ -145,79 +184,81 @@ int main (int argc, char** argv) {
         }
         else
             showPath=cwd;
-        /*
-        底下程式碼負責印出提示符號
-        */
+        
+        /* 印出提示符號 */
         printf(LIGHT_GREEN"%s@%s:", loginName, hostName);
         printf(BLU_BOLD"%s>> " NONE, showPath);
-        //printf();
-        //設定返回地點，如果使用者按下ctr-c會從sigsetjmp的下一行開始執行
-        sigsetjmp(jumpBuf, 1);
-        /*
-        接收使用者命令，除了cd, exit以外，其他指令呼叫對應的執行檔
-        */
+        
+        /* 設定返回地點，如果使用者按下ctr-c會從sigsetjmp的下一行開始執行 */
+        setjmp(jumpBuf);
+
+        /* 接收使用者命令，除了 cd, exit, dir, ^c 以外，其他指令呼叫對應的執行檔 */
         fgets(cmdLine, 4096, stdin);
-        //printf("cmdLine = %s\n",cmdLine);
-        if (strlen(cmdLine)>1)  //判斷長度是否大於1，判斷「使用者無聊按下enter鍵」
+        //printf("cmd = %s", cmdLine);
+
+        if (strlen(cmdLine) > 1)  // 長度是否 >1，判斷「使用者無聊按下 enter 鍵」
             parseString(cmdLine, &exeName);
         else
             continue;
-        if (strcmp(exeName, "^c") == 0) {   //使用者按下control-c，^c是由signal handler放入
-            //printf("ctr-c \n");
+
+        /* 處理 ctrl c */
+        if (strcmp(exeName, "^c") == 0) {   
             printf("\n");
             continue;
         }
-        if (strcmp(exeName, "exit") == 0)   //內建指令exit
+
+        /* dir 其實就是 ls */
+        if (strcmp(exeName, "dir")==0) {
+            dir();
+            printf("\n");
+            continue;
+        }
+
+        /* 結束 shell，因此跳出 while(1)，exit 為內建指令 */
+        if (strcmp(exeName, "exit") == 0)
             break;
-        if (strcmp(exeName, "cd") == 0) {   //內建指令cd
+        
+        /* cd 為內建指令，改變 shell 的工作目錄且 shell 的 child 會繼承這個工作目錄 */
+        if (strcmp(exeName, "cd") == 0) {
             if (strcmp(argVect[1], "~")==0)
                 chdir(getenv("HOME"));
             else
                 chdir(argVect[1]);
             continue;
         }
+
+        /* 外部指令的部分 */
         clock_gettime(CLOCK_MONOTONIC, &statTime);
-        pid = fork();   //除了exit, cd，其餘為外部指令
+        pid = fork();
         if (pid == 0) {
-            /*
-            產生一個child執行使用者的指令
-            */
-            if (execvp(exeName, argVect)==-1) {
+            if (execvp(exeName, argVect) == -1) {
                 perror("myShell");
                 exit(errno*-1);
             }
         } else {
-            /*
-            parent(myShell)等待child完成命令
-            完成命令後，parent將child的結束回傳值印出來
-            */
-            childPid = pid;/*通知singal handler，如果使用者按下ctr-c時，要處理這個child*/
-            hasChild = 1;/*通知singal handler，正在處理child*/
+            childPid = pid; /* 通知 singal handler，如果使用者按下 ctrl c時，要處理這個 child */
+            hasChild = 1; /* 通知 singal handler，正在處理 child */
+
             wait3(&wstatus, 0, &resUsage);
             clock_gettime(CLOCK_MONOTONIC, &endTime);
-            //wait(&wstatus);
-            //int ret=getrusage(RUSAGE_CHILDREN, &resUsage);
-            //printf("ret = %d\n", ret);
+
             double sysTime = timeval2sec(resUsage.ru_stime);
             double usrTime = timeval2sec(resUsage.ru_utime);
-            //printf("%ld\n", endTime.tv_nsec);
-            //printf("%ld\n", statTime.tv_nsec);
             printf("\n");
-            long long elapse = timespec2sec(endTime)-timespec2sec(statTime);
-            printf(RED"經過時間:                       "YELLOW"%lld.%llds\n",elapse/nspersec, elapse%nspersec);
-            printf(RED"CPU花在執行程式的時間:	         "YELLOW"%fs\n"
-                   RED"CPU於usr mode執行此程式所花的時間："YELLOW"%fs\n"
-                   RED"CPU於krl mode執行此程式所花的時間："YELLOW"%fs\n", sysTime+usrTime , usrTime, sysTime);
-            printf(RED"Page fault，但沒有造成I/O：      "YELLOW"%ld\n", resUsage.ru_minflt);
-            printf(RED"Page fault，並且觸發I/O:        "YELLOW"%ld\n", resUsage.ru_majflt);
-            printf(RED"自願性的context switch：        "YELLOW"%ld\n", resUsage.ru_nvcsw);
-            printf(RED"非自願性的context switch:       "YELLOW"%ld\n", resUsage.ru_nivcsw);
-            printf(RED "return value of " YELLOW "%s" RED " is " YELLOW "%d\n", 
-                exeName, WEXITSTATUS(wstatus));
-            //printf("isSignaled? %d\n", WIFSIGNALED(wstatus));
+
+            // long long elapse = timespec2sec(endTime)-timespec2sec(statTime);
+            // printf(RED"經過時間:                                "YELLOW"%lld.%llds\n",elapse/nspersec, elapse%nspersec);
+            // printf(RED"CPU 花在執行程式的時間：                 "YELLOW"%fs\n"
+            //        RED"CPU 於 usr mode 執行此程式所花的時間：   "YELLOW"%fs\n"
+            //        RED"CPU 於 krl mode 執行此程式所花的時間：   "YELLOW"%fs\n", sysTime+usrTime , usrTime, sysTime);
+            // printf(RED"Page fault，但沒有造成 I/O：             "YELLOW"%ld\n", resUsage.ru_minflt);
+            // printf(RED"Page fault，並且觸發 I/O：               "YELLOW"%ld\n", resUsage.ru_majflt);
+            // printf(RED"自願性的 context switch：                "YELLOW"%ld\n", resUsage.ru_nvcsw);
+            // printf(RED"非自願性的 context switch：              "YELLOW"%ld\n", resUsage.ru_nivcsw);
+            // printf(RED "return value of " YELLOW "%s" RED " is " YELLOW "%d\n", exeName, WEXITSTATUS(wstatus));
+
             if (WIFSIGNALED(wstatus))
-                printf(RED"the child process was terminated by a signal "YELLOW"%d"RED
-                    ", named " YELLOW "%s.\n",  WTERMSIG(wstatus), strsignal(WTERMSIG(wstatus)));
+                printf(RED"the child process was terminated by a signal "YELLOW"%d"RED", named " YELLOW "%s.\n",  WTERMSIG(wstatus), strsignal(WTERMSIG(wstatus)));
             printf(NONE);
         }
     }
