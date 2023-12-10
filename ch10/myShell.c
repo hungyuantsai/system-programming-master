@@ -59,10 +59,10 @@ sigjmp_buf jumpBuf;
 /* shell 是否產生 child process，決定 ctrl c 要送給誰 */
 volatile sig_atomic_t hasChild = 0;
 
-/* child的process id */ 
+/* child 的 process id */ 
 pid_t childPid;
 
-/* 每秒鐘有多少個nanoseconds */
+/* 每秒鐘有多少個 nanoseconds */
 const long long nspersec = 1000000000;
 
 long long timespec2sec(struct timespec ts) {
@@ -90,10 +90,8 @@ void ctrlC_handler(int sigNumber) {
     /* 否則先將「^c」放到 input stream，然後讓主迴圈決定怎樣處理「^c」*/
     else {
         printf("\n");
-        /* 確認 main function 並不是剛好在處理字串，這裡使用一個隱含的同步方法 */
-        /* 藉由確認是否 argVect[0]（即執行檔）是否為 NULL 保證 main function 不是在處理字串 */
-        /* 主程式的控制迴圈必須在一開始的地方將 argVect[0] 設為 NULL */
         if (argVect[0] == NULL) {
+            /* 推到 stdin 的 buffer 中 */
             ungetc('\n', stdin);
             ungetc('c', stdin);
             ungetc('^', stdin);
@@ -141,7 +139,6 @@ void parseString(char* str, char** cmd) {
         if (idx == 1) {
             *cmd = token;
         }
-        //printf("para = %s\n", token);
         token = strtok(NULL, " \n");
     }
     argVect[idx] = NULL; // string ending
@@ -189,12 +186,11 @@ int main (int argc, char** argv) {
         printf(LIGHT_GREEN"%s@%s:", loginName, hostName);
         printf(BLU_BOLD"%s>> " NONE, showPath);
         
-        /* 設定返回地點，如果使用者按下ctr-c會從sigsetjmp的下一行開始執行 */
+        /* 設定返回地點，如果使用者按下 ctrl c 會從 setjmp 的下一行開始執行 */
         setjmp(jumpBuf);
 
         /* 接收使用者命令，除了 cd, exit, dir, ^c 以外，其他指令呼叫對應的執行檔 */
         fgets(cmdLine, 4096, stdin);
-        //printf("cmd = %s", cmdLine);
 
         if (strlen(cmdLine) > 1)  // 長度是否 >1，判斷「使用者無聊按下 enter 鍵」
             parseString(cmdLine, &exeName);
