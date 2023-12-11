@@ -15,7 +15,7 @@ void sighandler(int signumber) {
 int main(int argc, char **argv) {
     assert(signal(SIGSEGV, sighandler) != SIG_ERR);
     
-    /* c沒有初始化就使用 */
+    /* c 沒有初始化就使用 */
     *c = 0xC0FE;
     
     printf("press Enter to continue\n");
