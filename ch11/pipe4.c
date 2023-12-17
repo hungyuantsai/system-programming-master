@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
             dup(pipefd[0]);     // 將 pipefd[0] 複製到 stdin
             close(pipefd[1]);   // 將沒用到的關閉
             close(pipefd[0]);   // 將沒用到的關閉
-            execlp("wc","wc", NULL);   // 執行 wc，wc 將透過 stdin 從 pipefd[0] 讀入資料
+            execlp("wc", "wc", NULL);   // 執行 wc，wc 將透過 stdin 從 pipefd[0] 讀入資料
         } else printf("2nd child's pid = %d\n", pid2);
     }
     // parent 一定要記得關掉 pipe 不然 wc 不會結束（因為沒有接到EOF）
